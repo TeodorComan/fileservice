@@ -101,7 +101,11 @@ public class FileServiceImpl implements FileService {
     @Override
     public void create(File file) {
 
-        validateFile(file);
+        if(file.getContent()==null || file.getContent().length==0){
+            throw new ClientException(ClientExceptionMessage.MISSING_CONTENT, "The file content doesn't exist.");
+        }
+
+        validateFileName(file.getName());
 
         Path filePath = fileUPath.resolve(file.getName());
 
@@ -278,14 +282,5 @@ public class FileServiceImpl implements FileService {
         } catch (IOException e) {
             LOGGER.error("Failed to delete backupfile: {}", backupFilePath);
         }
-    }
-
-    private void validateFile(File file) {
-
-        if(file.getContent()==null || file.getContent().length==0){
-            throw new ClientException(ClientExceptionMessage.MISSING_CONTENT, "The file content doesn't exist.");
-        }
-
-        validateFileName(file.getName());
     }
 }
