@@ -124,7 +124,20 @@ public class FileServiceImpl implements FileService {
 
         if(nioFilesWrapper.exists(filePath)) {
             LOGGER.debug("File {} already exists, will overwrite.",file);
-            backupFilePath = backupFile(filePath);
+
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_hh_mm_ss_z");
+
+            String backupFileName = filePath.getFileName()+"_"+sdf.format(new Date());
+
+            backupFilePath = fileBPath.resolve(backupFileName);
+
+            try {
+                nioFilesWrapper.copy(filePath,backupFilePath, StandardCopyOption.COPY_ATTRIBUTES);
+                LOGGER.debug("Backed up file {}", filePath);
+            } catch (IOException e) {
+                throw new ServerException("Couldn't backup file " + filePath, e);
+            }
+
             fileBackedUp=true;
         }
 
@@ -139,7 +152,11 @@ public class FileServiceImpl implements FileService {
         }
 
         if(fileBackedUp) {
-            deleteBackupFile(fileBPath.resolve(backupFilePath));
+            try {
+                nioFilesWrapper.delete(fileBPath.resolve(backupFilePath));
+            } catch (IOException e) {
+                LOGGER.error("Failed to delete backupfile: {}", backupFilePath);
+            }
         }
 
     }
@@ -183,7 +200,18 @@ public class FileServiceImpl implements FileService {
             throw new ClientException(ClientExceptionMessage.CONCURRENCY_CONFLICT,"The file "+fileName+" was modified since last read.");
         }
 
-        Path backupFilePath = backupFile(currentFilePath);;
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_hh_mm_ss_z");
+
+        String backupFileName = currentFilePath.getFileName()+"_"+sdf.format(new Date());
+
+        Path backupFilePath = fileBPath.resolve(backupFileName);
+
+        try {
+            nioFilesWrapper.copy(currentFilePath,backupFilePath, StandardCopyOption.COPY_ATTRIBUTES);
+            LOGGER.debug("Backed up file {}", currentFilePath);
+        } catch (IOException e) {
+            throw new ServerException("Couldn't backup file " + currentFilePath, e);
+        }
 
         Path filePathToModify = currentFilePath;
 
@@ -191,7 +219,11 @@ public class FileServiceImpl implements FileService {
             filePathToModify = fileUPath.resolve(file.getName());
 
             if(nioFilesWrapper.exists(filePathToModify)){
-                deleteBackupFile(backupFilePath);
+                try {
+                    nioFilesWrapper.delete(backupFilePath);
+                } catch (IOException e) {
+                    LOGGER.error("Failed to delete backupfile: {}", backupFilePath);
+                }
                 throw new ClientException(ClientExceptionMessage.FILENAME_CONFLICT,"File " + filePathToModify + " already exists.");
             }
 
@@ -219,7 +251,12 @@ public class FileServiceImpl implements FileService {
                 throw new ServerException("Couldn't update content of file " + fileName, e);
             }
         }
-        deleteBackupFile(backupFilePath);
+
+        try {
+            nioFilesWrapper.delete(backupFilePath);
+        } catch (IOException e) {
+            LOGGER.error("Failed to delete backupfile: {}", backupFilePath);
+        }
     }
 
     @Override
@@ -243,23 +280,6 @@ public class FileServiceImpl implements FileService {
         return fileNames;
     }
 
-    private Path backupFile(Path filePath) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_hh_mm_ss_z");
-
-        String backupFileName = filePath.getFileName()+"_"+sdf.format(new Date());
-
-        Path backUpFilePath = fileBPath.resolve(backupFileName);
-
-        try {
-            nioFilesWrapper.copy(filePath,backUpFilePath, StandardCopyOption.COPY_ATTRIBUTES);
-            LOGGER.debug("Backed up file {}", filePath);
-        } catch (IOException e) {
-            throw new ServerException("Couldn't backup file " + filePath, e);
-        }
-
-        return backUpFilePath;
-    }
-
     private void rollbackFile(Path filePath, Path backupFilePath) {
         LOGGER.info("Rolling back {} from {}",filePath,backupFilePath);
         try {
@@ -277,13 +297,5 @@ public class FileServiceImpl implements FileService {
         }
 
         LOGGER.info("Deleted backup file from {}", backupFilePath);
-    }
-
-    private void deleteBackupFile(Path backupFilePath) {
-        try {
-            nioFilesWrapper.delete(backupFilePath);
-        } catch (IOException e) {
-            LOGGER.error("Failed to delete backupfile: {}", backupFilePath);
-        }
     }
 }
