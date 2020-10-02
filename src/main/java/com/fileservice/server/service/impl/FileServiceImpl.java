@@ -105,7 +105,10 @@ public class FileServiceImpl implements FileService {
             throw new ClientException(ClientExceptionMessage.MISSING_CONTENT, "The file content doesn't exist.");
         }
 
-        validateFileName(file.getName());
+        String fileName = StringUtils.stripFilenameExtension(file.getName());
+        if(!fileName.matches(CHARACTERS)){
+            throw new ClientException(ClientExceptionMessage.INVALID_FILENAME, "The filename is invalid.");
+        }
 
         Path filePath = fileUPath.resolve(file.getName());
 
@@ -224,7 +227,10 @@ public class FileServiceImpl implements FileService {
         }
 
         if(file.getName()!=null){
-            validateFileName(file.getName());
+            String diskFileName = StringUtils.stripFilenameExtension(file.getName());
+            if(!diskFileName.matches(CHARACTERS)){
+                throw new ClientException(ClientExceptionMessage.INVALID_FILENAME, "The filename is invalid.");
+            }
         }
 
         if(file.getLastModified()==0L){
@@ -244,13 +250,6 @@ public class FileServiceImpl implements FileService {
 
         if(file.getLastModified()!=lastModifiedDate.toMillis()){
             throw new ClientException(ClientExceptionMessage.CONCURRENCY_CONFLICT,"The file "+fileName+" was modified since last read.");
-        }
-    }
-
-    private void validateFileName(String name) {
-        String fileName = StringUtils.stripFilenameExtension(name);
-        if(!fileName.matches(CHARACTERS)){
-            throw new ClientException(ClientExceptionMessage.INVALID_FILENAME, "The filename is invalid.");
         }
     }
 
