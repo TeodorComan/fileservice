@@ -27,12 +27,15 @@ import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import static com.fileservice.server.Constants.CHARACTERS;
+import static com.fileservice.server.Constants.DATE_FORMAT;
+
 
 @Service
 public class FileServiceImpl implements FileService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FileServiceImpl.class);
-    private static final String CHARACTERS = "[a-zA-z0-9_-]{1,64}";
+
     @Value("${fpath}")
     private String path;
     @Value("${fname}")
@@ -71,7 +74,6 @@ public class FileServiceImpl implements FileService {
 
 
 
-
             try {
                 file.setContent(nioFilesWrapper.readAllBytes(filePath));
             } catch (IOException e) {
@@ -88,7 +90,7 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public void delete(String name) {
+    public void deleteFile(String name) {
         Path filePath = fileUPath.resolve(name);
 
         if(nioFilesWrapper.notExists(filePath)){
@@ -105,13 +107,14 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public void create(File file) {
+    public void createFile(File file) {
 
         if(file.getContent()==null || file.getContent().length==0){
             throw new ClientException(ClientExceptionMessage.MISSING_CONTENT, "The file content doesn't exist.");
         }
 
         String fileName = StringUtils.stripFilenameExtension(file.getName());
+
         if(!fileName.matches(CHARACTERS)){
             throw new ClientException(ClientExceptionMessage.INVALID_FILENAME, "The filename is invalid.");
         }
@@ -125,7 +128,7 @@ public class FileServiceImpl implements FileService {
         if(nioFilesWrapper.exists(filePath)) {
             LOGGER.debug("File {} already exists, will overwrite.",file);
 
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_hh_mm_ss_z");
+            SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
 
             String backupFileName = filePath.getFileName()+"_"+sdf.format(new Date());
 

@@ -2,7 +2,6 @@ package com.fileservice.api;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -109,7 +108,7 @@ public class FileController {
         file.setName(uploadedFile.getOriginalFilename());
         file.setContent(uploadedFile.getBytes());
 
-        fileService.create(file);
+        fileService.createFile(file);
 
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
@@ -117,14 +116,14 @@ public class FileController {
     @PutMapping
     public ResponseEntity<Void> create(@RequestBody File file) {
 
-        fileService.create(file);
+        fileService.createFile(file);
 
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @DeleteMapping(path = "/{name}")
     public ResponseEntity<Void> delete(String name) {
-        fileService.delete(name);
+        fileService.deleteFile(name);
         return ResponseEntity.accepted().build();
     }
 }

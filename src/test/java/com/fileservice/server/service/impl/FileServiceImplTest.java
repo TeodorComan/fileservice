@@ -62,7 +62,7 @@ public class FileServiceImplTest {
 
         when(nioFilesWrapper.notExists(deletePath)).thenReturn(false);
 
-        fileService.delete(toDeleteFileName);
+        fileService.deleteFile(toDeleteFileName);
 
         verify(nioFilesWrapper).delete(deletePath);
 
@@ -74,7 +74,7 @@ public class FileServiceImplTest {
         when(nioFilesWrapper.notExists(deletePath)).thenReturn(true);
 
         try {
-            fileService.delete(toDeleteFileName);
+            fileService.deleteFile(toDeleteFileName);
             fail();
         } catch (ClientException e) {
             assertEquals(ClientExceptionMessage.MISSING_FILE, e.getClientExceptionMessage());
@@ -87,7 +87,7 @@ public class FileServiceImplTest {
         doThrow(new IOException()).when(nioFilesWrapper).delete(deletePath);
 
         try {
-            fileService.delete(toDeleteFileName);
+            fileService.deleteFile(toDeleteFileName);
             fail();
         } catch (ServerException e) {
             assertEquals(ClientExceptionMessage.GENERAL_ERROR, e.getClientExceptionMessage());
@@ -101,7 +101,7 @@ public class FileServiceImplTest {
         file.setContent(null);
 
         try {
-            fileService.create(file);
+            fileService.createFile(file);
             fail();
         } catch (ClientException e) {
             assertEquals(ClientExceptionMessage.MISSING_CONTENT, e.getClientExceptionMessage());
@@ -114,7 +114,7 @@ public class FileServiceImplTest {
         file.setContent(new byte[0]);
 
         try {
-            fileService.create(file);
+            fileService.createFile(file);
             fail();
         } catch (ClientException e) {
             assertEquals(ClientExceptionMessage.MISSING_CONTENT, e.getClientExceptionMessage());
@@ -128,7 +128,7 @@ public class FileServiceImplTest {
         file.setName("");
 
         try {
-            fileService.create(file);
+            fileService.createFile(file);
             fail();
         } catch (ClientException e) {
             assertEquals(ClientExceptionMessage.INVALID_FILENAME, e.getClientExceptionMessage());
@@ -142,7 +142,7 @@ public class FileServiceImplTest {
         file.setName(new String(new char[65]).replace('\0', 'a'));
 
         try {
-            fileService.create(file);
+            fileService.createFile(file);
             fail();
         } catch (ClientException e) {
             assertEquals(ClientExceptionMessage.INVALID_FILENAME, e.getClientExceptionMessage());
@@ -156,7 +156,7 @@ public class FileServiceImplTest {
         file.setName("!!");
 
         try {
-            fileService.create(file);
+            fileService.createFile(file);
             fail();
         } catch (ClientException e) {
             assertEquals(ClientExceptionMessage.INVALID_FILENAME, e.getClientExceptionMessage());
@@ -171,7 +171,7 @@ public class FileServiceImplTest {
 
         when(nioFilesWrapper.exists(basePath.resolve(file.getName()))).thenReturn(false);
 
-        fileService.create(file);
+        fileService.createFile(file);
 
 
         verifyBackupFileNotCreated(basePath.resolve(file.getName()));
@@ -188,7 +188,7 @@ public class FileServiceImplTest {
 
         when(nioFilesWrapper.exists(basePath.resolve(file.getName()))).thenReturn(false);
 
-        fileService.create(file);
+        fileService.createFile(file);
 
         verifyBackupFileNotCreated(basePath.resolve(file.getName()));
         verifyFileCreated(basePath.resolve(file.getName()));
@@ -204,7 +204,7 @@ public class FileServiceImplTest {
 
         when(nioFilesWrapper.exists(basePath.resolve(file.getName()))).thenReturn(true);
 
-        fileService.create(file);
+        fileService.createFile(file);
 
         verifyBackupIsDone(file.getName());
         verifyFileCreated(basePath.resolve(file.getName()));
@@ -223,7 +223,7 @@ public class FileServiceImplTest {
                 eq(StandardCopyOption.REPLACE_EXISTING));
 
         try {
-            fileService.create(file);
+            fileService.createFile(file);
             fail();
         } catch (ServerException e) {
             assertEquals(ClientExceptionMessage.GENERAL_ERROR, e.getClientExceptionMessage());
@@ -248,7 +248,7 @@ public class FileServiceImplTest {
         doThrow(new IOException()).when(nioFilesWrapper).copy(any(Path.class), eq(basePath.resolve(file.getName())), eq(StandardCopyOption.COPY_ATTRIBUTES));
 
         try {
-            fileService.create(file);
+            fileService.createFile(file);
             fail();
         } catch (ServerException e) {
             assertEquals(ClientExceptionMessage.GENERAL_ERROR, e.getClientExceptionMessage());

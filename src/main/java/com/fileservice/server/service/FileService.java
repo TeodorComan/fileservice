@@ -10,9 +10,9 @@ public interface FileService {
 
     File get(String name, Option... option);
 
-    void delete(String name);
+    void deleteFile(String name);
 
-    void create(File file);
+    void createFile(File file);
 
     void update (String fileName, File file);
 

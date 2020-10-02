@@ -3,6 +3,7 @@ package com.fileservice.server.cache;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -24,7 +25,7 @@ public class FNCache implements InitializingBean {
     @Autowired
     private NioFilesWrapper nioFilesWrapper;
 
-    private List<CharArray> fileNames = new LinkedList<>();
+    private List<CharArray> fileNames = Collections.synchronizedList(new LinkedList());
 
     private static final Logger LOG = LoggerFactory.getLogger(FNCache.class);
 
