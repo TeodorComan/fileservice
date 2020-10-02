@@ -146,11 +146,8 @@ public class FileServiceImpl implements FileService {
         } catch (IOException e) {
             LOGGER.error("Failed to create file {}",filePath,e);
             if(fileBackedUp) {
-
-                LOGGER.info("Rolling back {} from {}",filePath,backupFilePath);
                 try {
                     nioFilesWrapper.copy(backupFilePath,filePath, StandardCopyOption.COPY_ATTRIBUTES);
-                    LOGGER.info("Restored file from {}", backupFilePath);
                 } catch (IOException ex) {
                     throw new ServerException("Couldn't restore backup file " + backupFilePath, ex);
                 }
@@ -161,8 +158,6 @@ public class FileServiceImpl implements FileService {
                 catch (IOException exy) {
                     throw new ServerException("Couldn't delete file: " + filePath.toString(),exy);
                 }
-
-                LOGGER.info("Deleted backup file from {}", backupFilePath);
             }
             throw new ServerException("Couldn't create file", e);
         }
@@ -224,7 +219,6 @@ public class FileServiceImpl implements FileService {
 
         try {
             nioFilesWrapper.copy(currentFilePath,backupFilePath, StandardCopyOption.COPY_ATTRIBUTES);
-            LOGGER.debug("Backed up file {}", currentFilePath);
         } catch (IOException e) {
             throw new ServerException("Couldn't backup file " + currentFilePath, e);
         }
@@ -246,8 +240,6 @@ public class FileServiceImpl implements FileService {
             try {
                 nioFilesWrapper.move(currentFilePath,filePathToModify);
             } catch (IOException e) {
-
-                LOGGER.info("Rolling back {} from {}",currentFilePath,backupFilePath);
                 try {
                     nioFilesWrapper.copy(backupFilePath,currentFilePath, StandardCopyOption.COPY_ATTRIBUTES);
                     LOGGER.info("Restored file from {}", backupFilePath);
@@ -262,8 +254,6 @@ public class FileServiceImpl implements FileService {
                     throw new ServerException("Couldn't delete file: " + currentFilePath.toString(),exy);
                 }
 
-                LOGGER.info("Deleted backup file from {}", backupFilePath);
-
                 throw new ServerException("Couldn't rename file " + fileName + " to " + file.getName() ,e);
             }
         }
@@ -272,11 +262,8 @@ public class FileServiceImpl implements FileService {
             try {
                 nioFilesWrapper.copy(new ByteArrayInputStream(file.getContent()),filePathToModify, StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
-
-                LOGGER.info("Rolling back {} from {}",currentFilePath,backupFilePath);
                 try {
                     nioFilesWrapper.copy(backupFilePath,currentFilePath, StandardCopyOption.COPY_ATTRIBUTES);
-                    LOGGER.info("Restored file from {}", backupFilePath);
                 } catch (IOException exy) {
                     throw new ServerException("Couldn't restore backup file " + backupFilePath, exy);
                 }
@@ -287,10 +274,6 @@ public class FileServiceImpl implements FileService {
                 catch (IOException ex) {
                     throw new ServerException("Couldn't delete file: " + currentFilePath.toString(),ex);
                 }
-
-                LOGGER.info("Deleted backup file from {}", backupFilePath);
-
-
 
                 if(file.getName()!=null) {
                     try {
