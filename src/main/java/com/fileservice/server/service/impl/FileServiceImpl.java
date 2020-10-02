@@ -95,7 +95,12 @@ public class FileServiceImpl implements FileService {
             throw new ClientException(ClientExceptionMessage.MISSING_FILE,"The file: " + name + " doesn't exist");
         }
 
-        deleteFile(filePath);
+        try {
+            nioFilesWrapper.delete(filePath);
+        }
+        catch (IOException e) {
+            throw new ServerException("Couldn't delete file: " + filePath.toString(),e);
+        }
 
     }
 
@@ -204,7 +209,12 @@ public class FileServiceImpl implements FileService {
             } catch (IOException e) {
                 rollbackFile(currentFilePath,backupFilePath);
                 if(file.getName()!=null) {
-                    deleteFile(filePathToModify);
+                    try {
+                        nioFilesWrapper.delete(filePathToModify);
+                    }
+                    catch (IOException ex) {
+                        throw new ServerException("Couldn't delete file: " + filePathToModify.toString(),e);
+                    }
                 }
                 throw new ServerException("Couldn't update content of file " + fileName, e);
             }
@@ -250,15 +260,6 @@ public class FileServiceImpl implements FileService {
         return backUpFilePath;
     }
 
-    private void deleteFile(Path filePath) {
-        try {
-            nioFilesWrapper.delete(filePath);
-        }
-        catch (IOException e) {
-            throw new ServerException("Couldn't delete file: " + filePath.toString(),e);
-        }
-    }
-
     private void rollbackFile(Path filePath, Path backupFilePath) {
         LOGGER.info("Rolling back {} from {}",filePath,backupFilePath);
         try {
@@ -268,7 +269,13 @@ public class FileServiceImpl implements FileService {
             throw new ServerException("Couldn't restore backup file " + backupFilePath, e);
         }
 
-        deleteFile(backupFilePath);
+        try {
+            nioFilesWrapper.delete(backupFilePath);
+        }
+        catch (IOException e) {
+            throw new ServerException("Couldn't delete file: " + filePath.toString(),e);
+        }
+
         LOGGER.info("Deleted backup file from {}", backupFilePath);
     }
 
