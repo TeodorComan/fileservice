@@ -2,9 +2,7 @@ package com.fileservice.server.service.impl;
 
 import com.fileservice.server.cache.FCCache;
 import com.fileservice.server.cache.FNCache;
-import com.fileservice.server.exception.ClientException;
-import com.fileservice.server.exception.ClientExceptionMessage;
-import com.fileservice.server.exception.ServerException;
+import com.fileservice.server.exception.*;
 import com.fileservice.server.model.File;
 import com.fileservice.server.service.FileService;
 import org.slf4j.Logger;
@@ -94,14 +92,14 @@ public class FileServiceImpl implements FileService {
         Path filePath = fileUPath.resolve(name);
 
         if(nioFilesWrapper.notExists(filePath)){
-            throw new ClientException(ClientExceptionMessage.MISSING_FILE,"The file: " + name + " doesn't exist");
+            throw new MissingFileException("The file: " + name + " doesn't exist");
         }
 
         try {
             nioFilesWrapper.delete(filePath);
         }
         catch (IOException e) {
-            throw new ServerException("Couldn't delete file: " + filePath.toString(),e);
+            throw new FileDeletionException("Couldn't delete file: " + filePath.toString());
         }
 
     }

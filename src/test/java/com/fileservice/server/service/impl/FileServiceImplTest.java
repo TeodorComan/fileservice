@@ -18,6 +18,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
 import java.util.Date;
 
+import com.fileservice.server.exception.*;
 import com.fileservice.server.model.File;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,10 +27,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.util.ReflectionTestUtils;
-
-import com.fileservice.server.exception.ClientException;
-import com.fileservice.server.exception.ClientExceptionMessage;
-import com.fileservice.server.exception.ServerException;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 public class FileServiceImplTest {
@@ -42,8 +39,6 @@ public class FileServiceImplTest {
     private NioFilesWrapper nioFilesWrapper;
 
     private Path basePath = Paths.get("rootFolderPathValue").toAbsolutePath().normalize();
-    private Path countAddFile = basePath.resolve("countAddFileNameValue");
-    private Path countDeleteFile = basePath.resolve("countDeleteFileNameValue");
 
     private String toDeleteFileName = "toDeletefileName";
     private Path deletePath = basePath.resolve(toDeleteFileName);
@@ -68,31 +63,21 @@ public class FileServiceImplTest {
 
     }
 
-    @Test
-    public void deleteMissingDeleteFile() throws IOException {
+    @Test(expected = MissingFileException.class)
+    public void deleteMissingDeleteFile() {
 
         when(nioFilesWrapper.notExists(deletePath)).thenReturn(true);
 
-        try {
-            fileService.deleteFile(toDeleteFileName);
-            fail();
-        } catch (ClientException e) {
-            assertEquals(ClientExceptionMessage.MISSING_FILE, e.getClientExceptionMessage());
-        }
+        fileService.deleteFile(toDeleteFileName);
     }
 
-    @Test
+    @Test(expected = FileDeletionException.class)
     public void deleteFileFailsAndRollbackSucceeds() throws IOException {
         when(nioFilesWrapper.notExists(deletePath)).thenReturn(false);
         doThrow(new IOException()).when(nioFilesWrapper).delete(deletePath);
 
-        try {
-            fileService.deleteFile(toDeleteFileName);
-            fail();
-        } catch (ServerException e) {
-            assertEquals(ClientExceptionMessage.GENERAL_ERROR, e.getClientExceptionMessage());
-            assertEquals("Couldn't delete file: " + deletePath.toString(), e.getMessage());
-        }
+        fileService.deleteFile(toDeleteFileName);
+
     }
 
     @Test
@@ -174,10 +159,29 @@ public class FileServiceImplTest {
         fileService.createFile(file);
 
 
-        verifyBackupFileNotCreated(basePath.resolve(file.getName()));
-        verifyFileCreated(basePath.resolve(file.getName()));
-        verifyBackupFileNotDeleted();
-
+        /**
+         * -------------
+         * verifyBackupFileNotCreated
+         */
+        verify(nioFilesWrapper, never()).copy(eq(basePath.resolve(file.getName())), any(Path.class),
+                eq(StandardCopyOption.COPY_ATTRIBUTES));
+        /**
+         * --------------
+         * verifyBackupFileNotCreated
+         */
+        verify(nioFilesWrapper, never()).copy(eq(basePath.resolve(file.getName())), any(Path.class),
+                eq(StandardCopyOption.COPY_ATTRIBUTES));
+        /**
+         * -------------
+         * verifyFileCreated
+         */
+        verify(nioFilesWrapper).copy(any(ByteArrayInputStream.class), eq(basePath.resolve(file.getName())),
+                eq(StandardCopyOption.REPLACE_EXISTING));
+        /**
+         * -------------
+         *verifyBackupFileNotDeleted();
+         */
+        verify(nioFilesWrapper, never()).delete(any(Path.class));
     }
 
     @Test
@@ -190,9 +194,23 @@ public class FileServiceImplTest {
 
         fileService.createFile(file);
 
-        verifyBackupFileNotCreated(basePath.resolve(file.getName()));
-        verifyFileCreated(basePath.resolve(file.getName()));
-        verifyBackupFileNotDeleted();
+        /**
+         * --------------
+         * verifyBackupFileNotCreated
+         */
+        verify(nioFilesWrapper, never()).copy(eq(basePath.resolve(file.getName())), any(Path.class),
+                eq(StandardCopyOption.COPY_ATTRIBUTES));
+        /**
+         * -------------
+         * verifyFileCreated
+         */
+        verify(nioFilesWrapper).copy(any(ByteArrayInputStream.class), eq(basePath.resolve(file.getName())),
+                eq(StandardCopyOption.REPLACE_EXISTING));
+        /**
+         * -------------
+         *verifyBackupFileNotDeleted();
+         */
+        verify(nioFilesWrapper, never()).delete(any(Path.class));
     }
 
 
@@ -359,11 +377,26 @@ public class FileServiceImplTest {
             assertTrue(e.getMessage().contains("Couldn't rename file"));
         }
 
+        /**
+         *
+         * -------------
         verifyBackupIsDone("fileName");
         verifyFileRenamed("fileName", file);
         verifyContentNotOverwritten("fileName", file);
         verifyBackupRestored("fileName");
         verifyBackupFileDeleted();
+         **/
+        verify(nioFilesWrapper).copy(eq(basePath.resolve("fileName")), any(Path.class),
+                eq(StandardCopyOption.COPY_ATTRIBUTES));
+        verify(nioFilesWrapper).move(basePath.resolve("fileName"), basePath.resolve(file.getName()));
+        if (file.getName() == null) {
+            verify(nioFilesWrapper, never()).copy(any(ByteArrayInputStream.class), eq(basePath.resolve("fileName")), eq(StandardCopyOption.REPLACE_EXISTING));
+        } else {
+            verify(nioFilesWrapper, never()).copy(any(ByteArrayInputStream.class), eq(basePath.resolve(file.getName())), eq(StandardCopyOption.REPLACE_EXISTING));
+        }
+        verify(nioFilesWrapper).copy(any(Path.class), eq(basePath.resolve("fileName")),
+                eq(StandardCopyOption.COPY_ATTRIBUTES));
+        verify(nioFilesWrapper).delete(any(Path.class));
     }
 
     @Test
