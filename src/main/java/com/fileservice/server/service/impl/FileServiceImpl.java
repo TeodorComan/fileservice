@@ -33,22 +33,16 @@ public class FileServiceImpl implements FileService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FileServiceImpl.class);
     private static final String CHARACTERS = "[a-zA-z0-9_-]{1,64}";
-
     @Value("${fpath}")
     private String path;
-
     @Value("${fname}")
     private String name;
-
     @Autowired
     private NioFilesWrapper nioFilesWrapper;
-
     @Autowired
     private FCCache FCCache;
-
     @Autowired
     private FNCache FNCache;
-
     private Path fileUPath;
     private Path fileBPath;
 
@@ -57,7 +51,6 @@ public class FileServiceImpl implements FileService {
         this.fileUPath =Paths.get(path).toAbsolutePath().normalize();
         this.fileBPath =Paths.get(name).toAbsolutePath().normalize();
     }
-
     @Override
     public File get(String name, Option... option) {
 
@@ -74,14 +67,22 @@ public class FileServiceImpl implements FileService {
         } catch (IOException e) {
             throw new ServerException("Couldn't read file lastModifiedTime: " + name,e);
         }
-
         if(option.equals(Option.ALL)) {
+
+
+
+
             try {
                 file.setContent(nioFilesWrapper.readAllBytes(filePath));
             } catch (IOException e) {
                 throw new ServerException("Couldn't read file content: " + filePath, e);
             }
         }
+
+
+
+
+
 
         return file;
     }
@@ -143,7 +144,39 @@ public class FileServiceImpl implements FileService {
 
         Path currentFilePath = fileUPath.resolve(fileName);
 
-        validateUpdateRequest(fileName, file, currentFilePath);
+        if(fileName == null || fileName.trim().isEmpty()){
+            throw new ClientException(ClientExceptionMessage.INVALID_FILENAME,"The filename is null");
+        }
+
+        if(file==null || (file.getName()==null && file.getContent()==null)){
+            throw new ClientException(ClientExceptionMessage.INVALID_REQUEST,"The name or the content is mandatory");
+        }
+
+        if(file.getName()!=null){
+            String diskFileName = StringUtils.stripFilenameExtension(file.getName());
+            if(!diskFileName.matches(CHARACTERS)){
+                throw new ClientException(ClientExceptionMessage.INVALID_FILENAME, "The filename is invalid.");
+            }
+        }
+
+        if(file.getLastModified()==0L){
+            throw new ClientException(ClientExceptionMessage.INVALID_REQUEST,"Last Modified date is mandatory");
+        }
+
+        if(nioFilesWrapper.notExists(currentFilePath)){
+            throw new ClientException(ClientExceptionMessage.MISSING_FILE,"The file "+fileName+" doesn't exist");
+        }
+
+        FileTime lastModifiedDate;
+        try {
+            lastModifiedDate = nioFilesWrapper.getLastModifiedTime(currentFilePath);
+        } catch (IOException e) {
+            throw new ServerException("Couldn't read last modified date of the file",e);
+        }
+
+        if(file.getLastModified()!=lastModifiedDate.toMillis()){
+            throw new ClientException(ClientExceptionMessage.CONCURRENCY_CONFLICT,"The file "+fileName+" was modified since last read.");
+        }
 
         Path backupFilePath = backupFile(currentFilePath);;
 
@@ -215,42 +248,6 @@ public class FileServiceImpl implements FileService {
         }
 
         return backUpFilePath;
-    }
-
-    private void validateUpdateRequest(String fileName, File file, Path filePath) {
-        if(fileName == null || fileName.trim().isEmpty()){
-            throw new ClientException(ClientExceptionMessage.INVALID_FILENAME,"The filename is null");
-        }
-
-        if(file==null || (file.getName()==null && file.getContent()==null)){
-            throw new ClientException(ClientExceptionMessage.INVALID_REQUEST,"The name or the content is mandatory");
-        }
-
-        if(file.getName()!=null){
-            String diskFileName = StringUtils.stripFilenameExtension(file.getName());
-            if(!diskFileName.matches(CHARACTERS)){
-                throw new ClientException(ClientExceptionMessage.INVALID_FILENAME, "The filename is invalid.");
-            }
-        }
-
-        if(file.getLastModified()==0L){
-            throw new ClientException(ClientExceptionMessage.INVALID_REQUEST,"Last Modified date is mandatory");
-        }
-
-        if(nioFilesWrapper.notExists(filePath)){
-            throw new ClientException(ClientExceptionMessage.MISSING_FILE,"The file "+fileName+" doesn't exist");
-        }
-
-        FileTime lastModifiedDate;
-        try {
-            lastModifiedDate = nioFilesWrapper.getLastModifiedTime(filePath);
-        } catch (IOException e) {
-            throw new ServerException("Couldn't read last modified date of the file",e);
-        }
-
-        if(file.getLastModified()!=lastModifiedDate.toMillis()){
-            throw new ClientException(ClientExceptionMessage.CONCURRENCY_CONFLICT,"The file "+fileName+" was modified since last read.");
-        }
     }
 
     private void deleteFile(Path filePath) {
