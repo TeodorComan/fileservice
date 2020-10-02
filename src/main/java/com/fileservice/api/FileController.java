@@ -35,15 +35,13 @@ public class FileController {
     private FileService fileService;
 
     @RequestMapping(path="/{name}/download", method = RequestMethod.GET)
-    public ResponseEntity downloadFile(@PathVariable("fname") String name) {
+    public ResponseEntity downloadFile(@PathVariable("name") String name) {
 
-        Optional<File> optionalFile = fileService.get(name);
+        File file = fileService.get(name);
 
-        if(!optionalFile.isPresent()) {
+        if(file==null) {
             return ResponseEntity.notFound().build();
         }
-
-        File file = optionalFile.get();
 
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
@@ -54,10 +52,10 @@ public class FileController {
     @RequestMapping(path="/{name}", method = RequestMethod.GET)
     public ResponseEntity<File> getFile(@PathVariable("name") String name) {
 
-        Optional<File> optionalFile = fileService.get(name);
+        File file = fileService.get(name);
 
-        if(optionalFile.isPresent()){
-            return ResponseEntity.ok(fileService.get(name).get());
+        if(file != null){
+            return ResponseEntity.ok(fileService.get(name));
         } else {
             return ResponseEntity.notFound().build();
         }
@@ -65,11 +63,11 @@ public class FileController {
 
     @RequestMapping(method = RequestMethod.HEAD,path = "/{name}")
     public ResponseEntity<Void> getFileHeaders(@PathVariable("name") String fileName, HttpServletResponse response) {
-        Optional<File> file = fileService.get(fileName, Option.METADATA);
+        File file = fileService.get(fileName, Option.METADATA);
         ResponseEntity<Void> responseEntity;
 
-        if(file.isPresent()) {
-            response.addHeader("X-Last-Modified", String.valueOf(file.get().getLastModified()));
+        if(file!=null) {
+            response.addHeader("X-Last-Modified", String.valueOf(file.getLastModified()));
             responseEntity = ResponseEntity.ok().build();
         } else {
             responseEntity = ResponseEntity.notFound().build();
@@ -79,7 +77,7 @@ public class FileController {
     }
 
     @PostMapping(path = "/{name}")
-    public ResponseEntity<Void> update(@PathVariable("fname") String fileName, @RequestBody File file) {
+    public ResponseEntity<Void> update(@PathVariable("name") String fileName, @RequestBody File file) {
         fileService.update(fileName, file);
 
         return ResponseEntity.status(HttpStatus.ACCEPTED).build();

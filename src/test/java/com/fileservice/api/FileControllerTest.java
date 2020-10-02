@@ -63,7 +63,7 @@ public class FileControllerTest {
     @Test
     public void testGetFileNotFound() throws Exception {
 
-        when(fileService.get("fileName.png")).thenReturn(Optional.empty());
+        when(fileService.get("fileName.png")).thenReturn(null);
 
         MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.head("/file-service/v1/files/filename.png");
 
@@ -78,7 +78,7 @@ public class FileControllerTest {
         file.setContent("content".getBytes());
         file.setLastModified(12345);
 
-        when(fileService.get(file.getName())).thenReturn(Optional.of(file));
+        when(fileService.get(file.getName())).thenReturn(file);
 
         MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/file-service/v1/files/"+file.getName());
 

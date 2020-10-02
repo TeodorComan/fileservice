@@ -1,5 +1,20 @@
 package com.fileservice.server.service.impl;
 
+import com.fileservice.server.cache.FCCache;
+import com.fileservice.server.cache.FNCache;
+import com.fileservice.server.exception.ClientException;
+import com.fileservice.server.exception.ClientExceptionMessage;
+import com.fileservice.server.exception.ServerException;
+import com.fileservice.server.model.File;
+import com.fileservice.server.service.FileService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
+import javax.annotation.PostConstruct;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -10,25 +25,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 import java.util.regex.Pattern;
-
-import javax.annotation.PostConstruct;
-
-import com.fileservice.server.cache.FCCache;
-import com.fileservice.server.cache.FNCache;
-import com.fileservice.server.exception.ClientException;
-import com.fileservice.server.exception.ClientExceptionMessage;
-import com.fileservice.server.exception.ServerException;
-import com.fileservice.server.model.File;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-
-import com.fileservice.server.service.FileService;
 
 
 @Service
@@ -62,12 +59,12 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public Optional<File> get(String name, Option... option) {
+    public File get(String name, Option... option) {
 
         Path filePath = fileUPath.resolve(name);
 
         if(nioFilesWrapper.notExists(filePath)){
-            return Optional.empty();
+            return null;
         }
 
         File file = new File();
@@ -86,7 +83,7 @@ public class FileServiceImpl implements FileService {
             }
         }
 
-        return Optional.of(file);
+        return file;
     }
 
     @Override

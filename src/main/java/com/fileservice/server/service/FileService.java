@@ -8,7 +8,7 @@ import com.fileservice.server.service.impl.Option;
 
 public interface FileService {
 
-    Optional<File> get(String name, Option... option);
+    File get(String name, Option... option);
 
     void delete(String name);
 
